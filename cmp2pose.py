@@ -24,7 +24,8 @@
 # into JSON format for the .pose file.
 
 import json
-
+import sys
+import os
 
 def reverse_byte_order(input_str, count):
     # Function for step 4 in the conversion process above
@@ -215,7 +216,7 @@ def convert_cmp_to_pose(data):
         "Rotation": "0, 0, 0, 1",
         "Scale": "1, 1, 1",
         "Bones": {},
-        "Author": "CMP to POSE file converter",
+        "Author": "cmp2pose converter"
     }
 
     # Go through each key-value pair in the cmp data and convert them to pose data
@@ -245,13 +246,32 @@ def convert_cmp_to_pose(data):
     return converted_pose_data
 
 
-# Reading the .cmp file
-with open("input_file.cmp", "r") as infile:
-    cmp_data = json.load(infile)
+if __name__ == "__main__":
+    # Check the argument the script was ran with
+    if len(sys.argv) != 2:
+        print("Missing argument! Specify either a .cmp file to convert or a folder to convert recursively.")
+        sys.exit(1)
 
-# Converting .cmp to .pose
-pose_data = convert_cmp_to_pose(cmp_data)
+    # Check if the argument is a file or a folder
+    if os.path.isfile(sys.argv[1]):
+        # Convert the file
+        print("Converting file: " + sys.argv[1])
+        with open(sys.argv[1], "r") as infile:
+            cmp_data = json.load(infile)
+        pose_data = convert_cmp_to_pose(cmp_data)
+        with open(sys.argv[1].replace(".cmp", ".pose"), "w") as outfile:
+            json.dump(pose_data, outfile, indent=4)
+    elif os.path.isdir(sys.argv[1]):
+        # Convert all files in the folder
+        print("Converting folder: " + sys.argv[1])
+        for root, dirs, files in os.walk(sys.argv[1]):
+            for file in files:
+                if file.endswith(".cmp"):
+                    print("Converting file: " + file)
+                    with open(os.path.join(root, file), "r") as infile:
+                        cmp_data = json.load(infile)
+                    pose_data = convert_cmp_to_pose(cmp_data)
+                    with open(os.path.join(root, file.replace(".cmp", ".pose")), "w") as outfile:
+                        json.dump(pose_data, outfile, indent=4)
 
-# Writing the .pose file
-with open("output_file.pose", "w") as outfile:
-    json.dump(pose_data, outfile, indent=4)
+    print("Done!")
